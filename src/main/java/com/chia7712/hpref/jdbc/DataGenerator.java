@@ -1,17 +1,18 @@
 package com.chia7712.hpref.jdbc;
 
-import com.chia7712.hpref.schedule.DispatcherFactory;
-import com.chia7712.hpref.schedule.Dispatcher;
-import com.chia7712.hpref.view.Progress;
 import com.chia7712.hpref.data.RandomData;
 import com.chia7712.hpref.data.RandomDataFactory;
+import com.chia7712.hpref.schedule.Dispatcher;
+import com.chia7712.hpref.schedule.DispatcherFactory;
 import com.chia7712.hpref.schedule.Packet;
 import com.chia7712.hpref.view.Arguments;
+import com.chia7712.hpref.view.Progress;
 import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +20,6 @@ import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -34,6 +34,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Threads;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Puts some data to specified database.
@@ -43,7 +45,7 @@ public final class DataGenerator {
   /**
    * Log.
    */
-  private static final Log LOG = LogFactory.getLog(DataGenerator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DataGenerator.class);
 
   /**
    * Write thread. End with commiting all rows.
@@ -68,8 +70,8 @@ public final class DataGenerator {
      *
      * @param url Targeted db url
      * @param upsertSQL Upsert sql
-     * @param progress Count the committed data
-     * @param rowCount
+     * @param dispatcher
+     * @param writers
      * @throws SQLException If failed to establish db connection
      */
     private WriteThread(final String url, final String upsertSQL,

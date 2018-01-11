@@ -22,8 +22,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
@@ -35,10 +33,12 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Durability;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.hadoop.hbase.util.Threads;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DataGenerator {
 
-  private static final Log LOG = LogFactory.getLog(DataGenerator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(DataGenerator.class);
   private static final String NUMBER_OF_THREAD = "threads";
   private static final String TABLE_NAME = "table";
   private static final String NUMBER_OF_ROW = "rows";
@@ -123,12 +123,12 @@ public class DataGenerator {
               packet.get().commit();
             }
           } catch (IOException | InterruptedException ex) {
-            LOG.error(ex);
+            LOG.error("Failed to operate the row update", ex);
           } finally {
             try {
               slave.close();
             } catch (Exception ex) {
-              LOG.error(ex);
+              LOG.error("Failed to close the slave", ex);
             }
           }
 
@@ -145,7 +145,7 @@ public class DataGenerator {
             TimeUnit.SECONDS.sleep(logInterval);
           }
         } catch (InterruptedException ex) {
-          LOG.error(ex);
+          LOG.error("The logger is interrupted", ex);
         } finally {
           log(statistic, totalRows, startTime, maxThroughput);
         }
@@ -353,7 +353,7 @@ public class DataGenerator {
       try (Admin admin = conn.getAdmin()) {
         admin.flush(nameToFlush);
       } catch (IOException ex) {
-        LOG.error(ex);
+        LOG.error("Failed to flush the data", ex);
       }
     }
 
@@ -362,7 +362,7 @@ public class DataGenerator {
         try {
           obj.close();
         } catch (IOException ex) {
-          LOG.error(ex);
+          LOG.error("Failed to close " + obj.getClass().getName(), ex);
         }
       }
     }

@@ -10,9 +10,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestDispatcher {
-
+  private static final Logger LOG = LoggerFactory.getLogger(TestDispatcher.class);
   @Test(timeout = 5000)
   public void testIteratorWithConstantBound() throws InterruptedException {
     testIterator(100, () -> 10, 5);

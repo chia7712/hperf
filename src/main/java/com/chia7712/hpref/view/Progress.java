@@ -8,12 +8,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Progress implements Closeable {
 
-  private static final Log LOG = LogFactory.getLog(Progress.class);
+  private static final Logger LOG = LoggerFactory.getLogger(Progress.class);
   private final long startTime = System.currentTimeMillis();
   private final AtomicBoolean closed = new AtomicBoolean(false);
   private final ExecutorService service = Executors.newSingleThreadExecutor();
