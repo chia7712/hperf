@@ -16,6 +16,6 @@ dependencies {
 }
 
 task copyDeps(type: Copy) {
-  into "$buildDir/deps"
+  into "$buildDir/libs"
   from configurations.compile
 }
