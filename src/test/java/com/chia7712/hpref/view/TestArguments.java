@@ -1,9 +1,8 @@
-package com.chia7712.hpref.com.chia7712.hpref.view;
+package com.chia7712.hpref.view;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import com.chia7712.hpref.view.Arguments;
 import java.util.Arrays;
 import org.junit.Test;
 
