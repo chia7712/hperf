@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,8 +25,6 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.AsyncConnection;
-import org.apache.hadoop.hbase.client.AsyncTable;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Durability;
@@ -254,10 +251,8 @@ public class DataGenerator {
 
     private final ProcessMode processMode;
     private final RequestMode requestMode;
-    private final AsyncConnection asyncConn;
     private final Connection conn;
     private final TableName nameToFlush;
-    private AsyncTable asyncTable;
 
     ConnectionWrap(Optional<ProcessMode> processMode,
       Optional<RequestMode> requestMode, TableName nameToFlush) throws IOException {
@@ -266,23 +261,16 @@ public class DataGenerator {
       this.nameToFlush = nameToFlush;
       if (processMode.isPresent()) {
         switch (processMode.get()) {
-        case SYNC:
-          asyncConn = null;
-          conn = ConnectionFactory.createConnection();
-          break;
-        case ASYNC:
-          conn = nameToFlush != null ? ConnectionFactory.createConnection() : null;
-          asyncConn = ConnectionFactory.createAsyncConnection().join();
-          break;
-        case BUFFER:
-          asyncConn = null;
-          conn = ConnectionFactory.createConnection();
-          break;
-        default:
-          throw new IllegalArgumentException("Unknown type:" + processMode.get());
+          case SYNC:
+            conn = ConnectionFactory.createConnection();
+            break;
+          case BUFFER:
+            conn = ConnectionFactory.createConnection();
+            break;
+          default:
+            throw new IllegalArgumentException("Unknown type:" + processMode.get());
         }
       } else {
-        asyncConn = ConnectionFactory.createAsyncConnection().join();
         conn = ConnectionFactory.createConnection();
       }
     }
@@ -305,13 +293,6 @@ public class DataGenerator {
       }
     }
 
-    private AsyncTable getAsyncTable(TableName tableName) {
-      if (asyncTable == null) {
-        asyncTable = asyncConn.getTable(tableName, ForkJoinPool.commonPool());
-      }
-      return asyncTable;
-    }
-
     Slave createSlave(final TableName tableName, final DataStatistic statistic, final int batchSize) throws IOException {
       ProcessMode p = getProcessMode();
       RequestMode r = getRequestMode();
@@ -325,14 +306,6 @@ public class DataGenerator {
           return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
         }
         break;
-      case ASYNC:
-        switch (r) {
-        case BATCH:
-          return new BatchSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
-        case NORMAL:
-          return new NormalSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
-        }
-        break;
       case BUFFER:
         return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize);
       }
@@ -343,7 +316,6 @@ public class DataGenerator {
     public void close() throws IOException {
       flush();
       safeClose(conn);
-      safeClose(asyncConn);
     }
 
     private void flush() {

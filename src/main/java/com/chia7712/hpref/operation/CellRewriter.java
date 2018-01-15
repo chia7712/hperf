@@ -1,6 +1,7 @@
 package com.chia7712.hpref.operation;
 
 import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 
 public class CellRewriter {
 
@@ -171,6 +172,11 @@ public class CellRewriter {
     }
 
     @Override
+    public long getMvccVersion() {
+      return 0;
+    }
+
+    @Override
     public long getSequenceId() {
       return cell.getSequenceId();
     }
@@ -203,6 +209,26 @@ public class CellRewriter {
     @Override
     public int getTagsLength() {
       return (int) getFieldLength(Field.TAG);
+    }
+
+    @Override
+    public byte[] getValue() {
+      return CellUtil.cloneValue(this);
+    }
+
+    @Override
+    public byte[] getFamily() {
+      return CellUtil.cloneFamily(this);
+    }
+
+    @Override
+    public byte[] getQualifier() {
+      return CellUtil.cloneQualifier(this);
+    }
+
+    @Override
+    public byte[] getRow() {
+      return CellUtil.cloneRow(this);
     }
   }
 }
