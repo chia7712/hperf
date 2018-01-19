@@ -22,3 +22,13 @@ task copyDeps(type: Copy) {
   into "$buildDir/libs"
   from configurations.compile
 }
+
+task copyTestDeps(type: Copy) {
+  into "$buildDir/test_libs"
+  from configurations.testCompile
+}
+
+clean.doFirst {
+  delete "${rootDir}/target"
+  delete "${rootDir}/out"
+}
