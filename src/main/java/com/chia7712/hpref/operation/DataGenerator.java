@@ -338,7 +338,9 @@ public class DataGenerator {
         case BUFFER:
           return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize, true);
         case SHARED_BUFFER:
-          bm = conn.getBufferedMutator(tableName);
+          if (bm == null) {
+            bm = conn.getBufferedMutator(tableName);
+          }
           return new BufferSlaveSync(bm, statistic, batchSize, false);
       }
       throw new RuntimeException("Failed to find the suitable slave. ProcessMode:" + p + ", RequestMode:" + r);
