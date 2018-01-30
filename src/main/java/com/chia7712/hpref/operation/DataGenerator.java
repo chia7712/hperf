@@ -267,20 +267,21 @@ public class DataGenerator {
       this.nameToFlush = nameToFlush;
       if (processMode.isPresent()) {
         switch (processMode.get()) {
-        case SYNC:
-          asyncConn = null;
-          conn = ConnectionFactory.createConnection();
-          break;
-        case ASYNC:
-          conn = nameToFlush != null ? ConnectionFactory.createConnection() : null;
-          asyncConn = ConnectionFactory.createAsyncConnection().join();
-          break;
-        case BUFFER:
-          asyncConn = null;
-          conn = ConnectionFactory.createConnection();
-          break;
-        default:
-          throw new IllegalArgumentException("Unknown type:" + processMode.get());
+          case SYNC:
+            asyncConn = null;
+            conn = ConnectionFactory.createConnection();
+            break;
+          case ASYNC:
+            conn = nameToFlush != null ? ConnectionFactory.createConnection() : null;
+            asyncConn = ConnectionFactory.createAsyncConnection().join();
+            break;
+          case BUFFER:
+          case SHARED_BUFFER:
+            asyncConn = null;
+            conn = ConnectionFactory.createConnection();
+            break;
+          default:
+            throw new IllegalArgumentException("Unknown type:" + processMode.get());
         }
       } else {
         asyncConn = ConnectionFactory.createAsyncConnection().join();
