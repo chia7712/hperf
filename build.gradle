@@ -1,21 +1,47 @@
 group 'com.chia7712.hperf'
 version '1.0-SNAPSHOT'
 
+apply from: "$rootDir/gradle/dependencies.gradle"
 apply plugin: 'java'
 
 sourceCompatibility = 1.8
 
 repositories {
+  mavenLocal()
   mavenCentral()
 }
 
 dependencies {
-  compile group: 'org.apache.hbase', name: 'hbase-client', version: '2.0.0-alpha4'
-  testCompile group: 'junit', name: 'junit', version: '4.12'
-  testCompile group: 'org.mockito', name: 'mockito-all', version: '1.10.19'
+  compile libs.hbaseClient
+  testCompile(libs.guava) {
+    force = true
+  }
+  testCompile libs.tomcat
+  testCompile libs.hbaseServer
+  testCompile libs.junit
+  testCompile libs.mockito
+  testCompile "$libs.hbaseServer:tests"
+  testCompile "$libs.hbaseHadoopCompat:tests"
+  testCompile "$libs.hbaseHadoop2Compat:tests"
+  testCompile "$libs.hadoopCommon:tests"
+  testCompile "$libs.hadoopHdfs:tests"
+}
+
+test {
+  systemProperty "java.library.path", System.getProperty("java.library.path") + ":${rootDir}/src/test/resources/native"
 }
 
 task copyDeps(type: Copy) {
   into "$buildDir/libs"
   from configurations.compile
+}
+
+task copyTestDeps(type: Copy) {
+  into "$buildDir/test_libs"
+  from configurations.testCompile
+}
+
+clean.doFirst {
+  delete "${rootDir}/target"
+  delete "${rootDir}/out"
 }

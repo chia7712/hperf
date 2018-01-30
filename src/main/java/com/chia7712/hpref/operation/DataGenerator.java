@@ -28,6 +28,7 @@ import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.AsyncConnection;
 import org.apache.hadoop.hbase.client.AsyncTable;
+import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Durability;
@@ -258,7 +259,7 @@ public class DataGenerator {
     private final Connection conn;
     private final TableName nameToFlush;
     private AsyncTable asyncTable;
-
+    private BufferedMutator bm = null;
     ConnectionWrap(Optional<ProcessMode> processMode,
       Optional<RequestMode> requestMode, TableName nameToFlush) throws IOException {
       this.processMode = processMode.orElse(null);
@@ -317,31 +318,35 @@ public class DataGenerator {
       RequestMode r = getRequestMode();
 
       switch (p) {
-      case SYNC:
-        switch (r) {
-        case BATCH:
-          return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
-        case NORMAL:
-          return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
-        }
-        break;
-      case ASYNC:
-        switch (r) {
-        case BATCH:
-          return new BatchSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
-        case NORMAL:
-          return new NormalSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
-        }
-        break;
-      case BUFFER:
-        return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize);
+        case SYNC:
+          switch (r) {
+          case BATCH:
+            return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
+          case NORMAL:
+            return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
+          }
+          break;
+        case ASYNC:
+          switch (r) {
+          case BATCH:
+            return new BatchSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
+          case NORMAL:
+            return new NormalSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
+          }
+          break;
+        case BUFFER:
+          return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize, true);
+        case SHARED_BUFFER:
+          bm = conn.getBufferedMutator(tableName);
+          return new BufferSlaveSync(bm, statistic, batchSize, false);
       }
       throw new RuntimeException("Failed to find the suitable slave. ProcessMode:" + p + ", RequestMode:" + r);
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       flush();
+      safeClose(bm);
       safeClose(conn);
       safeClose(asyncConn);
     }
