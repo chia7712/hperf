@@ -8,10 +8,13 @@ import org.apache.hadoop.hbase.client.Row;
 public class BufferSlaveSync extends BatchSlave {
 
   private final BufferedMutator mutater;
+  private final boolean closeBuffer;
 
-  public BufferSlaveSync(BufferedMutator table, final DataStatistic statistic, final int batchSize) {
+  public BufferSlaveSync(BufferedMutator mutater, final DataStatistic statistic, final int batchSize
+    , boolean closeBuffer) {
     super(statistic, batchSize);
-    this.mutater = table;
+    this.mutater = mutater;
+    this.closeBuffer = closeBuffer;
   }
 
   @Override
@@ -29,7 +32,7 @@ public class BufferSlaveSync extends BatchSlave {
 
   @Override
   public ProcessMode getProcessMode() {
-    return ProcessMode.BUFFER;
+    return closeBuffer ? ProcessMode.BUFFER : ProcessMode.SHARED_BUFFER;
   }
 
   @Override
@@ -39,6 +42,8 @@ public class BufferSlaveSync extends BatchSlave {
 
   @Override
   public void close() throws IOException, InterruptedException {
-    mutater.close();
+    if (closeBuffer) {
+      mutater.close();
+    }
   }
 }

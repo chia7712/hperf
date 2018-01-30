@@ -4,7 +4,7 @@ import com.chia7712.hpref.util.EnumUtil;
 import java.util.Optional;
 
 public enum ProcessMode {
-  SYNC, BUFFER;
+  SYNC, BUFFER, SHARED_BUFFER;
   public static Optional<ProcessMode> find(String value) {
     return EnumUtil.find(value, ProcessMode.class);
   }

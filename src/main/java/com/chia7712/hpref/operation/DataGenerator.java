@@ -25,6 +25,7 @@ import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.HTableDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
+import org.apache.hadoop.hbase.client.BufferedMutator;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Durability;
@@ -253,7 +254,7 @@ public class DataGenerator {
     private final RequestMode requestMode;
     private final Connection conn;
     private final TableName nameToFlush;
-
+    private BufferedMutator bm;
     ConnectionWrap(Optional<ProcessMode> processMode,
       Optional<RequestMode> requestMode, TableName nameToFlush) throws IOException {
       this.processMode = processMode.orElse(null);
@@ -265,6 +266,7 @@ public class DataGenerator {
             conn = ConnectionFactory.createConnection();
             break;
           case BUFFER:
+          case SHARED_BUFFER:
             conn = ConnectionFactory.createConnection();
             break;
           default:
@@ -298,23 +300,29 @@ public class DataGenerator {
       RequestMode r = getRequestMode();
 
       switch (p) {
-      case SYNC:
-        switch (r) {
-        case BATCH:
-          return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
-        case NORMAL:
-          return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
-        }
-        break;
-      case BUFFER:
-        return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize);
+        case SYNC:
+          switch (r) {
+          case BATCH:
+            return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
+          case NORMAL:
+            return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
+          }
+          break;
+        case BUFFER:
+          return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize, true);
+        case SHARED_BUFFER:
+          if (bm == null) {
+            bm = conn.getBufferedMutator(tableName);
+          }
+          return new BufferSlaveSync(bm, statistic, batchSize, true);
       }
       throw new RuntimeException("Failed to find the suitable slave. ProcessMode:" + p + ", RequestMode:" + r);
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
       flush();
+      safeClose(bm);
       safeClose(conn);
     }
 
