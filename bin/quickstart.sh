@@ -17,6 +17,20 @@ echo "export JAVA_HOME=$JAVA_HOME" >> $HOME/.bashrc
 ssh localhost -o StrictHostKeyChecking=no "export"
 ssh 0.0.0.0 -o StrictHostKeyChecking=no "export"
 
+# generate hbase
+cd /testpatch/hbase
+git checkout -- .
+git clean -df
+git checkout master
+git pull
+if [ ! -f /testpatch/patch ]; then
+  git apply /testpatch/patch
+else
+  echo "no patch file"
+fi
+mvn clean install -DskipTests assembly:single
+tar -zxvf /testpatch/hbase/hbase-assembly/target/hbase-3.0.0-SNAPSHOT-bin.tar.gz -C $HOME/
+
 # deploy hadoop's config
 cp $HPREF_HOME/conf/hadoop/* $HADOOP_HOME/etc/hadoop/
 
