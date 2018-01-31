@@ -29,3 +29,5 @@ cp $HPREF_HOME/conf/hbase/* $HBASE_HOME/conf/
 
 # start hbase
 $HBASE_HOME/bin/start-hbase.sh
+
+exec bash
