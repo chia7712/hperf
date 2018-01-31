@@ -15,6 +15,7 @@ echo "export JAVA_HOME=$JAVA_HOME" >> $HOME/.bashrc
 
 # list the env variables
 ssh localhost -o StrictHostKeyChecking=no "export"
+ssh 0.0.0.0 -o StrictHostKeyChecking=no "export"
 
 # deploy hadoop's config
 cp $HPREF_HOME/conf/hadoop/* $HADOOP_HOME/etc/hadoop/
