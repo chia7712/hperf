@@ -35,7 +35,7 @@ tar -zxvf /testpatch/hbase/hbase-assembly/target/hbase-3.0.0-SNAPSHOT-bin.tar.gz
 cp $HPREF_HOME/conf/hadoop/* $HADOOP_HOME/etc/hadoop/
 
 # start hadoop
-$HADOOP_HOME/bin/hdfs dfs namenode -format
+$HADOOP_HOME/bin/hdfs namenode -format
 $HADOOP_HOME/sbin/start-dfs.sh
 
 # deploy hbase's config
