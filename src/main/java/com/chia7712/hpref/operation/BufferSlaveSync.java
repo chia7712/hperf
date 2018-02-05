@@ -32,7 +32,7 @@ public class BufferSlaveSync extends BatchSlave {
 
   @Override
   public ProcessMode getProcessMode() {
-    return ProcessMode.BUFFER;
+    return closeBuffer ? ProcessMode.BUFFER : ProcessMode.SHARED_BUFFER;
   }
 
   @Override
