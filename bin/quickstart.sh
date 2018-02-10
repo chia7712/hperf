@@ -31,6 +31,10 @@ fi
 mvn clean install -DskipTests assembly:single
 tar -zxvf /testpatch/hbase/hbase-assembly/target/hbase-3.0.0-SNAPSHOT-bin.tar.gz -C $HOME/
 
+# build hpref
+cd $HPREF_HOME
+gradle clean build -x test -q copyDeps
+
 # deploy hadoop's config
 cp $HPREF_HOME/conf/hadoop/* $HADOOP_HOME/etc/hadoop/
 
