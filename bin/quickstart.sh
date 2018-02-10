@@ -18,10 +18,10 @@ ssh localhost -o StrictHostKeyChecking=no "export"
 ssh 0.0.0.0 -o StrictHostKeyChecking=no "export"
 
 # generate hbase
-rm -rf $HBASE_HOME
+rm -rf /testpatch/hbase
 cd /testpatch
 git clone https://github.com/apache/hbase
-cd $HBASE_HOME
+cd /testpatch/hbase
 git checkout master
 if [ -f /testpatch/patch ]; then
   git apply /testpatch/patch --stat
