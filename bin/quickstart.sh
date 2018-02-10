@@ -21,6 +21,7 @@ ssh 0.0.0.0 -o StrictHostKeyChecking=no "export"
 rm -rf $HBASE_HOME
 cd /testpatch
 git clone https://github.com/apache/hbase
+cd $HBASE_HOME
 git checkout master
 if [ -f /testpatch/patch ]; then
   git apply /testpatch/patch --stat
