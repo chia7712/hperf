@@ -31,7 +31,7 @@ export JAVA_HOME=/usr/lib/jvm/default-java
 export HBASE_CLASSPATH=/root/hadoop-2.7.4/lib/native/
 
 # The maximum amount of heap to use. Default is left to JVM default.
-export HBASE_HEAPSIZE=4G
+# export HBASE_HEAPSIZE=16G
 
 # Uncomment below if you intend to use off heap cache. For example, to allocate 8G of 
 # offheap, set the value to "8G".
@@ -79,8 +79,8 @@ export HBASE_OPTS="-XX:+UseConcMarkSweepGC"
 # section in HBase Reference Guide for instructions.
 
 # export HBASE_JMX_BASE="-Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false"
-# export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10101"
-# export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10102"
+export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10101 -Xms1G -Xmx1G"
+export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10102 -Xms16G -Xmx16G"
 # export HBASE_THRIFT_OPTS="$HBASE_THRIFT_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10103"
 # export HBASE_ZOOKEEPER_OPTS="$HBASE_ZOOKEEPER_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10104"
 # export HBASE_REST_OPTS="$HBASE_REST_OPTS $HBASE_JMX_BASE -Dcom.sun.management.jmxremote.port=10105"
