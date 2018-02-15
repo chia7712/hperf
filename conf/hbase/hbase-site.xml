@@ -37,4 +37,8 @@
     <name>hbase.zookeeper.property.dataDir</name>
     <value>/tmp/standalone/zookeeper</value>
   </property>
+  <property>
+    <name>dfs.replication</name>
+    <value>1</value>
+  </property>
 </configuration>
