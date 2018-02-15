@@ -45,4 +45,8 @@
     <name>hbase.hregion.memstore.flush.size</name>
     <value>536870912</value>
   </property>
+  <property>
+    <name>hbase.hstore.flusher.count</name>
+    <value>6</value>
+  </property>
 </configuration>
