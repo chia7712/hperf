@@ -321,18 +321,18 @@ public class DataGenerator {
       switch (p) {
         case SYNC:
           switch (r) {
-          case BATCH:
-            return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
-          case NORMAL:
-            return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
+            case BATCH:
+              return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
+            case NORMAL:
+              return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
           }
           break;
         case ASYNC:
           switch (r) {
-          case BATCH:
-            return new BatchSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
-          case NORMAL:
-            return new NormalSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
+            case BATCH:
+              return new BatchSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
+            case NORMAL:
+              return new NormalSlaveAsync(getAsyncTable(tableName), statistic, batchSize);
           }
           break;
         case BUFFER:
