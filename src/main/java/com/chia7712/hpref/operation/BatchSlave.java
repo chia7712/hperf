@@ -64,6 +64,7 @@ public abstract class BatchSlave implements Slave {
   private void addNewRows(Record record, int delta) {
     assert delta >= 0;
     statistic.addNewRows(record, delta);
+    processedRows.add(delta);
     processingRows.add(delta);
   }
 
