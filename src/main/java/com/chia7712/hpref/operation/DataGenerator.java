@@ -94,12 +94,14 @@ public class DataGenerator {
       Threads.newDaemonThreadFactory("-" + DataGenerator.class.getSimpleName()));
     Dispatcher dispatcher = DispatcherFactory.get(totalRows, batchSize);
     DataStatistic statistic = new DataStatistic();
+    List<Statisticable> statisticables = new ArrayList<>(threads);
     try (ConnectionWrap conn = new ConnectionWrap(processMode, requestMode,
       needFlush ? tableName : null)) {
       List<CompletableFuture> slaves = new ArrayList<>(threads);
       Map<SlaveCatalog, AtomicInteger> slaveCatalog = new TreeMap<>();
       for (int i = 0; i != threads; ++i) {
         Slave slave = conn.createSlave(tableName, statistic, batchSize);
+        statisticables.add(slave);
         LOG.info("Starting #" + i + " " + slave);
         slaveCatalog.computeIfAbsent(new SlaveCatalog(slave), k -> new AtomicInteger(0))
           .incrementAndGet();
@@ -142,13 +144,13 @@ public class DataGenerator {
         long maxThroughput = 0;
         try {
           while (!stop.get()) {
-            maxThroughput = log(statistic, totalRows, startTime, maxThroughput);
+            maxThroughput = log(statistic, totalRows, startTime, maxThroughput, statisticables);
             TimeUnit.SECONDS.sleep(logInterval);
           }
         } catch (InterruptedException ex) {
           LOG.error("The logger is interrupted", ex);
         } finally {
-          log(statistic, totalRows, startTime, maxThroughput);
+          log(statistic, totalRows, startTime, maxThroughput, statisticables);
         }
       });
       slaves.forEach(CompletableFuture::join);
@@ -196,8 +198,15 @@ public class DataGenerator {
     }
   }
 
+  private static String toString(List<Statisticable> statisticables) {
+    StringBuilder builder = new StringBuilder();
+    for (Statisticable stat : statisticables) {
+      builder.append(stat.getProcessedRows()).append(",");
+    }
+    return builder.length() > 0 ? builder.substring(0, builder.length() - 1) : builder.toString();
+  }
   private static long log(DataStatistic statistic, long totalRows,
-    long startTime, long maxThroughput) {
+    long startTime, long maxThroughput, List<Statisticable> statisticables) {
     long elapsed = (System.currentTimeMillis() - startTime) / 1000;
     long committedRows = statistic.getCommittedRows();
     if (elapsed <= 0 || committedRows <= 0) {
@@ -209,6 +218,7 @@ public class DataGenerator {
     }
     maxThroughput = Math.max(maxThroughput, throughput);
     LOG.info("------------------------");
+    LOG.info(toString(statisticables));
     LOG.info("total rows:" + totalRows);
     LOG.info("max throughput(rows/s):" + maxThroughput);
     LOG.info("throughput(rows/s):" + throughput);
