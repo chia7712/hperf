@@ -39,12 +39,18 @@ public abstract class BatchSlave implements Slave {
     Collectors.toList());
   private static final byte[] DELIMITER = Bytes.toBytes("-");
   private final LongAdder processingRows = new LongAdder();
+  private final LongAdder processedRows = new LongAdder();
   private final DataStatistic statistic;
   private final int batchRows;
   private final ConcurrentMap<DataType, Record> recordCache = new ConcurrentHashMap<>();
   public BatchSlave(final DataStatistic statistic, final int batchRows) {
     this.statistic = statistic;
     this.batchRows = batchRows;
+  }
+
+  @Override
+  public long getProcessedRows() {
+    return processedRows.longValue();
   }
 
   private static boolean isNormalCell(RowWork work) {
@@ -57,6 +63,7 @@ public abstract class BatchSlave implements Slave {
   private void addNewRows(Record record, int delta) {
     assert delta >= 0;
     statistic.addNewRows(record, delta);
+    processedRows.add(delta);
     processingRows.add(delta);
   }
 
@@ -92,7 +99,8 @@ public abstract class BatchSlave implements Slave {
     statistic.finishRows(cache.get(expectedType), delta);
   }
 
-  private long getProcessingRows() {
+  @Override
+  public long getProcessingRows() {
     return processingRows.longValue();
   }
 
