@@ -24,6 +24,7 @@ git checkout master
 git pull
 if [ -f /testpatch/patch ]; then
   git apply /testpatch/patch --stat
+  git apply /testpatch/patch
 else
   echo "no patch file"
 fi
