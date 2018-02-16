@@ -21,8 +21,10 @@ ssh 0.0.0.0 -o StrictHostKeyChecking=no "export"
 cd /testpatch/hbase
 git checkout -- . | git clean -df
 if [ -z ${HBASE_BRANCH} ]; then
+  echo "checkout to $HBASE_BRANCH"
   git checkout $HBASE_BRANCH
 else
+  echo "HBASE_BRANCH is unset, checkout to master"
   git checkout master
 fi
 git pull
