@@ -200,9 +200,8 @@ public class DataGenerator {
 
   private static String toString(List<Statisticable> statisticables) {
     StringBuilder builder = new StringBuilder();
-    for (Statisticable stat : statisticables) {
-      builder.append(stat.getProcessedRows()).append(",");
-    }
+    statisticables.stream().mapToLong(Statisticable::getProcessedRows)
+      .sorted().forEach(count -> builder.append(count).append(","));
     return builder.length() > 0 ? builder.substring(0, builder.length() - 1) : builder.toString();
   }
   private static long log(DataStatistic statistic, long totalRows,
