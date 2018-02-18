@@ -244,6 +244,7 @@ public class DataGenerator {
       HTableDescriptor desc = admin.getTableDescriptor(tableName);
       Set<byte[]> columns = new TreeSet<>(Bytes.BYTES_COMPARATOR);
       for (HColumnDescriptor col : desc.getColumnFamilies()) {
+        LOG.info("find column:" + col.getNameAsString());
         columns.add(col.getName());
       }
       return columns;
