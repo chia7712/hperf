@@ -7,13 +7,13 @@ import org.apache.hadoop.hbase.client.Row;
 
 public class BufferSlaveSync extends BatchSlave {
 
-  private final BufferedMutator mutater;
+  private final BufferedMutator mutator;
   private final boolean closeBuffer;
 
-  public BufferSlaveSync(BufferedMutator mutater, final DataStatistic statistic, final int batchSize
+  public BufferSlaveSync(BufferedMutator mutator, final DataStatistic statistic, final int batchSize
     , boolean closeBuffer) {
     super(statistic, batchSize);
-    this.mutater = mutater;
+    this.mutator = mutator;
     this.closeBuffer = closeBuffer;
   }
 
@@ -22,7 +22,7 @@ public class BufferSlaveSync extends BatchSlave {
     Row row = prepareRow(work);
     switch (work.getDataType()) {
     case PUT:
-      mutater.mutate((Put) row);
+      mutator.mutate((Put) row);
       finishRows(work.getDataType(), 1);
       break;
     default:
@@ -43,7 +43,7 @@ public class BufferSlaveSync extends BatchSlave {
   @Override
   public void close() throws IOException, InterruptedException {
     if (closeBuffer) {
-      mutater.close();
+      mutator.close();
     }
   }
 }
