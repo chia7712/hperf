@@ -323,7 +323,7 @@ public class DataGenerator {
           if (bm == null) {
             bm = conn.getBufferedMutator(tableName);
           }
-          return new BufferSlaveSync(bm, statistic, batchSize, true);
+          return new BufferSlaveSync(bm, statistic, batchSize, false);
       }
       throw new RuntimeException("Failed to find the suitable slave. ProcessMode:" + p + ", RequestMode:" + r);
     }
