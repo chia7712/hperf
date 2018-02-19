@@ -64,8 +64,8 @@ public class RandomDataFactory {
     public byte[] getBytes(int length) {
       byte[] l = Bytes.toBytes(String.valueOf(length));
       byte[] b = new byte[length];
-      int offset = Bytes.putBytes(b, 0, l, 0, l.length);
-      Arrays.fill(b, offset, b.length, (byte)'a');
+      rn.nextBytes(b);
+      Bytes.putBytes(b, 0, l, 0, l.length);
       return b;
     }
 
