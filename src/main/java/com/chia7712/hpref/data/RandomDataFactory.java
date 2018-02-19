@@ -2,6 +2,7 @@ package com.chia7712.hpref.data;
 
 import java.util.Arrays;
 import java.util.Random;
+import org.apache.hadoop.hbase.util.Bytes;
 
 public class RandomDataFactory {
 
@@ -61,8 +62,10 @@ public class RandomDataFactory {
 
     @Override
     public byte[] getBytes(int length) {
+      byte[] l = Bytes.toBytes(String.valueOf(length));
       byte[] b = new byte[length];
-      rn.nextBytes(b);
+      int offset = Bytes.putBytes(b, 0, l, 0, l.length);
+      Arrays.fill(b, offset, b.length, (byte)'a');
       return b;
     }
 

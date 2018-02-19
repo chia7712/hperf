@@ -3,15 +3,21 @@ package com.chia7712.hpref.operation;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.hadoop.hbase.Cell;
+import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.Delete;
 import org.apache.hadoop.hbase.client.Get;
 import org.apache.hadoop.hbase.client.Increment;
 import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.Row;
 import org.apache.hadoop.hbase.client.Table;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NormalSlaveSync extends BatchSlave {
-
+  private static final Logger LOG = LoggerFactory.getLogger(NormalSlaveSync.class);
   private List<Put> puts;
   private List<Delete> deletes;
   private List<Get> gets;
@@ -65,27 +71,28 @@ public class NormalSlaveSync extends BatchSlave {
   public void updateRow(RowWork work) throws IOException, InterruptedException {
     Row row = prepareRow(work);
     switch (work.getDataType()) {
-    case GET:
-      getGetBuffer().add((Get) row);
-      break;
-    case PUT:
-      getPutBuffer().add((Put) row);
-      break;
-    case DELETE:
-      getDeleteBuffer().add((Delete) row);
-      break;
-    case INCREMENT:
-      getIncrementBuffer().add((Increment) row);
-      break;
-    default:
-      throw new IllegalArgumentException("Unsupported type:" + work.getDataType());
+      case GET:
+        getGetBuffer().add((Get) row);
+        break;
+      case PUT:
+        getPutBuffer().add((Put) row);
+        break;
+      case DELETE:
+        getDeleteBuffer().add((Delete) row);
+        break;
+      case INCREMENT:
+        getIncrementBuffer().add((Increment) row);
+        break;
+      default:
+        throw new IllegalArgumentException("Unsupported type:" + work.getDataType());
     }
     if (needFlush()) {
       flush();
     }
   }
 
-  private void innerFlush(List<?> data, TableAction f, DataType type) throws IOException, InterruptedException {
+  private void innerFlush(List<?> data, TableAction f, DataType type)
+    throws IOException, InterruptedException {
     if (data == null || data.isEmpty()) {
       return;
     }
@@ -101,8 +108,30 @@ public class NormalSlaveSync extends BatchSlave {
   private void flush() throws IOException, InterruptedException {
     innerFlush(puts, t -> t.put(puts), DataType.PUT);
     innerFlush(deletes, t -> t.delete(deletes), DataType.DELETE);
-    innerFlush(gets, t -> t.get(gets), DataType.GET);
+    innerFlush(gets, t -> {
+
+    }, DataType.GET);
     innerFlush(incrs, t -> t.batch(incrs, getObjects()), DataType.INCREMENT);
+  }
+
+  private static void checkResult(Table t, List<Get> gets) throws IOException {
+    for (Result r : t.get(gets)) {
+      if (r.isEmpty()) {
+        continue;
+      }
+      byte[] value = null;
+      for (Cell c : r.rawCells()) {
+        if (value == null) {
+          value = CellUtil.cloneValue(c);
+          continue;
+        }
+        if (!Bytes.equals(value, 0, value.length, c.getValueArray(), c.getValueOffset(),
+          c.getValueLength())) {
+          LOG.info("Unmatched value. expected:" + Bytes.toStringBinary(value) + ", actual:" + Bytes
+            .toStringBinary(c.getValueArray(), c.getValueOffset(), c.getValueLength()));
+        }
+      }
+    }
   }
 
   @Override
