@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.HConstants;
@@ -24,25 +26,17 @@ import org.apache.hadoop.hbase.util.Bytes;
 public abstract class BatchSlave implements Slave {
   private static final int LONG_LENGTH = String.valueOf(Long.MAX_VALUE).length();
   private static final RandomData RANDOM = RandomDataFactory.create();
-  private static final List<String> KEYS = Arrays.asList(
-    "0-",
-    "1-",
-    "2-",
-    "3-",
-    "4-",
-    "5-",
-    "6-",
-    "7-",
-    "8-",
-    "9-");
-  private static final List<byte[]> KEYS_BYTES = KEYS.stream().map(Bytes::toBytes).collect(
-    Collectors.toList());
+  private static final List<String> KEYS =
+    Arrays.asList("0-", "1-", "2-", "3-", "4-", "5-", "6-", "7-", "8-", "9-");
+  private static final List<byte[]> KEYS_BYTES =
+    KEYS.stream().map(Bytes::toBytes).collect(Collectors.toList());
   private static final byte[] DELIMITER = Bytes.toBytes("-");
   private final LongAdder processingRows = new LongAdder();
   private final LongAdder processedRows = new LongAdder();
   private final DataStatistic statistic;
   private final int batchRows;
   private final ConcurrentMap<DataType, Record> recordCache = new ConcurrentHashMap<>();
+
   public BatchSlave(final DataStatistic statistic, final int batchRows) {
     this.statistic = statistic;
     this.batchRows = batchRows;
@@ -53,9 +47,6 @@ public abstract class BatchSlave implements Slave {
     return processedRows.longValue();
   }
 
-  private static boolean isNormalCell(RowWork work) {
-    return work.getCellSize()<= 0;
-  }
   protected boolean needFlush() {
     return getProcessingRows() >= batchRows;
   }
@@ -107,20 +98,20 @@ public abstract class BatchSlave implements Slave {
   protected Row prepareRow(RowWork work) {
     Row row;
     switch (work.getDataType()) {
-    case PUT:
-      row = createRandomPut(work);
-      break;
-    case DELETE:
-      row = createRandomDelete(work);
-      break;
-    case GET:
-      row = createRandomGet(work);
-      break;
-    case INCREMENT:
-      row = createRandomIncrement(work);
-      break;
-    default:
-      throw new RuntimeException("Unknown type:" + work.getDataType());
+      case PUT:
+        row = createRandomPut(work);
+        break;
+      case DELETE:
+        row = createRandomDelete(work);
+        break;
+      case GET:
+        row = createRandomGet(work);
+        break;
+      case INCREMENT:
+        row = createRandomIncrement(work);
+        break;
+      default:
+        throw new RuntimeException("Unknown type:" + work.getDataType());
     }
     addNewRows(new Record(getProcessMode(), getRequestMode(), work.getDataType()), 1);
     return row;
@@ -143,6 +134,7 @@ public abstract class BatchSlave implements Slave {
     }
     return finalIndex.toString();
   }
+
   static byte[] createNormalRow(RowWork work) {
     byte[] key = KEYS_BYTES.get((int) (Math.random() * KEYS_BYTES.size()));
     byte[] rowIndexBytes = Bytes.toBytes(formatIndex(work.getRowIndex()));
@@ -158,8 +150,8 @@ public abstract class BatchSlave implements Slave {
     byte[] rowIndexBytes = Bytes.toBytes(formatIndex(work.getRowIndex()));
     byte[] timeBytes = Bytes.toBytes(String.valueOf(System.currentTimeMillis()));
     byte[] randomIndex = Bytes.toBytes(formatIndex(RANDOM.getLong()));
-    byte[] buf = new byte[key.length + timeBytes.length + DELIMITER.length
-      + randomIndex.length + DELIMITER.length + rowIndexBytes.length];
+    byte[] buf = new byte[key.length + timeBytes.length + DELIMITER.length + randomIndex.length
+      + DELIMITER.length + rowIndexBytes.length];
     int offset = 0;
     offset = Bytes.putBytes(buf, offset, key, 0, key.length);
     offset = Bytes.putBytes(buf, offset, timeBytes, 0, timeBytes.length);
@@ -172,34 +164,11 @@ public abstract class BatchSlave implements Slave {
 
   private static Put createRandomPut(RowWork work) {
     byte[] row = createRow(work);
+    Map<byte[], List<Cell>> fmCells =
+      createCells(row, work, () -> RANDOM.getBytes(work.getValueSize()));
     SimplePut put = new SimplePut(row);
-    put.setDurability(work.getDurability());
-    CellRewriter rewriter = null;
-    byte[] largeData = isNormalCell(work) ? null : RANDOM.getBytes(work.getCellSize());
-    for (byte[] family : work.getFamilies()) {
-      for (int i = 0; i != work.getQualifierCount(); ++i) {
-        Cell cell;
-        byte[] normalData = Bytes.toBytes(work.getRowIndex() + i);
-        if (rewriter == null) {
-          cell = new IndividualBytesFieldCell(row, family,
-            normalData, HConstants.LATEST_TIMESTAMP, KeyValue.Type.Put, normalData);
-          rewriter = CellRewriter.newCellRewriter(cell);
-        } else {
-          byte[] value = largeData == null ? normalData : largeData;
-          if (work.getLargeQualifier()) {
-            cell = rewriter.rewrite(CellRewriter.Field.QUALIFIER, value)
-              .rewrite(CellRewriter.Field.VALUE, normalData)
-              .getAndReset();
-          } else {
-            cell = rewriter.rewrite(CellRewriter.Field.QUALIFIER, normalData)
-              .rewrite(CellRewriter.Field.VALUE, value)
-              .getAndReset();
-          }
-
-        }
-        put.add(family, cell, work.getQualifierCount());
-      }
-    }
+    fmCells
+      .forEach((fm, cells) -> cells.forEach(cell -> put.add(fm, cell, work.getQualifierCount())));
     return put;
   }
 
@@ -207,72 +176,72 @@ public abstract class BatchSlave implements Slave {
     byte[] row = createRow(work);
     Get get = new Get(row);
     switch (RANDOM.getInteger(1)) {
-    case 0:
-      for (byte[] family : work.getFamilies()) {
-        for (int i = 0; i != work.getQualifierCount(); ++i) {
-          get.addColumn(family, Bytes.toBytes(RANDOM.getLong()));
+      case 0:
+        for (byte[] family : work.getFamilies()) {
+          for (int i = 0; i != work.getQualifierCount(); ++i) {
+            get.addColumn(family, Bytes.toBytes(RANDOM.getLong()));
+          }
         }
-      }
-      break;
-    default:
-      for (byte[] family : work.getFamilies()) {
-        get.addFamily(family);
-      }
-      break;
+        break;
+      default:
+        for (byte[] family : work.getFamilies()) {
+          get.addFamily(family);
+        }
+        break;
     }
     return get;
   }
 
   private static Delete createRandomDelete(RowWork work) {
     byte[] row = createRow(work);
+    Map<byte[], List<Cell>> fmCells = createCells(row, work, () -> null);
     SimpleDelete delete = new SimpleDelete(row);
-    delete.setDurability(work.getDurability());
-    CellRewriter rewriter = null;
-    for (byte[] family : work.getFamilies()) {
-      for (int i = 0; i != work.getQualifierCount(); ++i) {
-        Cell cell;
-        byte[] normalData = Bytes.toBytes(work.getRowIndex() + i);
-        if (rewriter == null) {
-          cell = new IndividualBytesFieldCell(row, family,
-            normalData, HConstants.LATEST_TIMESTAMP, KeyValue.Type.Delete, null);
-          rewriter = CellRewriter.newCellRewriter(cell);
-        } else {
-          byte[] largeData = isNormalCell(work) ? normalData : RANDOM.getBytes(work.getCellSize());
-          cell = rewriter.rewrite(CellRewriter.Field.QUALIFIER, largeData)
-            .getAndReset();
-        }
-        delete.add(family, cell, work.getQualifierCount());
-      }
-    }
+    fmCells.forEach(
+      (fm, cells) -> cells.forEach(cell -> delete.add(fm, cell, work.getQualifierCount())));
     return delete;
   }
 
   private static Increment createRandomIncrement(RowWork work) {
     byte[] row = createRow(work);
+    Map<byte[], List<Cell>> fmCells = createCells(row, work, () -> Bytes.toBytes(1L));
+    SimpleIncrement inc = new SimpleIncrement(row);
+    fmCells
+      .forEach((fm, cells) -> cells.forEach(cell -> inc.add(fm, cell, work.getQualifierCount())));
+    return inc;
+  }
+
+  private static Map<byte[], List<Cell>> createCells(byte[] row, RowWork work,
+    Supplier<byte[]> valueGenerator) {
+    Map<byte[], List<Cell>> rval = new TreeMap<>(Bytes.BYTES_COMPARATOR);
     SimpleIncrement inc = new SimpleIncrement(row);
     inc.setDurability(work.getDurability());
     CellRewriter rewriter = null;
+    byte[] value = valueGenerator.get();
     for (byte[] family : work.getFamilies()) {
+      List<Cell> cells = rval.get(family);
+      if (cells == null) {
+        cells = new ArrayList<>();
+        rval.put(family, cells);
+      }
       for (int i = 0; i != work.getQualifierCount(); ++i) {
         Cell cell;
-        byte[] normalData = Bytes.toBytes(work.getRowIndex() + i);
+        byte[] qualifier = RANDOM.getBytes(work.getQualifierSize());
         if (rewriter == null) {
-          cell = new IndividualBytesFieldCell(row, family,
-            normalData, HConstants.LATEST_TIMESTAMP, KeyValue.Type.Put, normalData);
+          cell = new IndividualBytesFieldCell(row, family, qualifier, HConstants.LATEST_TIMESTAMP,
+            KeyValue.Type.Put, value);
           rewriter = CellRewriter.newCellRewriter(cell);
         } else {
-          byte[] largeData = isNormalCell(work) ? normalData : RANDOM.getBytes(work.getCellSize());
-          cell = rewriter.rewrite(CellRewriter.Field.QUALIFIER, largeData)
-            .getAndReset();
+          cell = rewriter.rewrite(CellRewriter.Field.QUALIFIER, qualifier).getAndReset();
         }
-        inc.add(family, cell, work.getQualifierCount());
+        cells.add(cell);
       }
     }
-    return inc;
+    return rval;
   }
 
   private static class SimplePut extends Put {
     private Long heapSize;
+
     private SimplePut(byte[] row) {
       super(row);
     }

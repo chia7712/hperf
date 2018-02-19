@@ -7,27 +7,32 @@ public class RowWork {
   public static Builder newBuilder() {
     return new Builder();
   }
+
   public static class Builder {
     private DataType type;
     private long rowIndex;
     private Set<byte[]> families;
     private int qualCount;
     private Durability durability;
-    private int cellSize;
-    private boolean largeQualifier;
+    private int qualSize;
+    private int valueSize;
     private boolean randomRow;
+
     public Builder setRandomRow(boolean randomRow) {
       this.randomRow = randomRow;
       return this;
     }
-    public Builder setLargeQualifier(boolean largeQualifier) {
-      this.largeQualifier = largeQualifier;
+
+    public Builder setQualifierSize(int qualSize) {
+      this.qualSize = qualSize;
       return this;
     }
-    public Builder setCellSize(int cellSize) {
-      this.cellSize = cellSize;
+
+    public Builder setValueSize(int valueSize) {
+      this.valueSize = valueSize;
       return this;
     }
+
     public Builder setBatchType(DataType type) {
       this.type = type;
       return this;
@@ -52,29 +57,35 @@ public class RowWork {
       this.durability = durability;
       return this;
     }
+
     public RowWork build() {
-      return new RowWork(type, rowIndex, families, qualCount, durability, cellSize, largeQualifier, randomRow);
+      return new RowWork(type, rowIndex, families, qualCount, durability, qualSize, valueSize,
+        randomRow);
     }
-    private Builder(){}
+
+    private Builder() {
+    }
   }
+
   private final DataType type;
   private final long rowIndex;
   private final Set<byte[]> families;
   private final int qualCount;
   private final Durability durability;
-  private final int cellSize;
-  private final boolean largeQualifier;
+  private final int qualSize;
+  private final int valueSize;
   private final boolean randomRow;
+
   private RowWork(final DataType type, final long rowIndex, final Set<byte[]> families,
-    final int qualCount, final Durability durability, final int cellSize,
-    final boolean largeQualifier, final boolean randomRow) {
+    final int qualCount, final Durability durability, final int qualSize, final int valueSize,
+    final boolean randomRow) {
     this.type = type;
     this.rowIndex = rowIndex;
     this.families = families;
     this.qualCount = qualCount;
     this.durability = durability;
-    this.cellSize = cellSize;
-    this.largeQualifier = largeQualifier;
+    this.qualSize = qualSize;
+    this.valueSize = valueSize;
     this.randomRow = randomRow;
   }
 
@@ -82,13 +93,14 @@ public class RowWork {
     return randomRow;
   }
 
-  public boolean getLargeQualifier() {
-    return largeQualifier;
+  public int getQualifierSize() {
+    return qualSize;
   }
 
-  public int getCellSize() {
-    return cellSize;
+  public int getValueSize() {
+    return valueSize;
   }
+
   public DataType getDataType() {
     return type;
   }

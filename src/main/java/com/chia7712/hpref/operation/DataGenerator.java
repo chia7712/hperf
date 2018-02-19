@@ -42,49 +42,41 @@ public class DataGenerator {
   private static final String NUMBER_OF_ROW = "rows";
   private static final String BATCH_SIZE = "batchSize";
   private static final String NUMBER_OF_QUALIFIER = "qualCount";
-  private static final String CELL_SIZE = "cellSize";
+  private static final String QUALIFIER_SIZE = "qualifierSize";
+  private static final String VALUE_SIZE = "valueSize";
   private static final String FLUSH_AT_THE_END = "flushtable";
   private static final String LARGE_QUALIFIER = "largequal";
   private static final String LOG_INTERVAL = "logInterval";
   private static final String RANDOM_ROW = "randomRow";
-  public static void main(String[] args) throws IOException, InterruptedException,
-    ExecutionException {
-    Arguments arguments = new Arguments(
-      Arrays.asList(
-        NUMBER_OF_THREAD,
-        TABLE_NAME,
-        NUMBER_OF_ROW),
-      Arrays.asList(ProcessMode.class.getSimpleName(),
-        RequestMode.class.getSimpleName(),
-        DataType.class.getSimpleName(),
-        Durability.class.getSimpleName(),
-        BATCH_SIZE,
-        NUMBER_OF_QUALIFIER,
-        CELL_SIZE,
-        FLUSH_AT_THE_END,
-        LARGE_QUALIFIER,
-        LOG_INTERVAL,
-        RANDOM_ROW),
-      Arrays.asList(
-        getDescription(ProcessMode.class.getSimpleName(), ProcessMode.values()),
+
+  public static void main(String[] args)
+    throws IOException, InterruptedException, ExecutionException {
+    Arguments arguments = new Arguments(Arrays.asList(NUMBER_OF_THREAD, TABLE_NAME, NUMBER_OF_ROW),
+      Arrays.asList(ProcessMode.class.getSimpleName(), RequestMode.class.getSimpleName(),
+        DataType.class.getSimpleName(), Durability.class.getSimpleName(), BATCH_SIZE,
+        NUMBER_OF_QUALIFIER, VALUE_SIZE, FLUSH_AT_THE_END, LARGE_QUALIFIER, LOG_INTERVAL,
+        RANDOM_ROW), Arrays
+      .asList(getDescription(ProcessMode.class.getSimpleName(), ProcessMode.values()),
         getDescription(RequestMode.class.getSimpleName(), RequestMode.values()),
         getDescription(DataType.class.getSimpleName(), DataType.values()),
-        getDescription(Durability.class.getSimpleName(), Durability.values()))
-    );
+        getDescription(Durability.class.getSimpleName(), Durability.values())));
     arguments.validate(args);
     final int threads = arguments.getInt(NUMBER_OF_THREAD);
     final TableName tableName = TableName.valueOf(arguments.get(TABLE_NAME));
     final long totalRows = arguments.getLong(NUMBER_OF_ROW);
-    final Optional<ProcessMode> processMode = ProcessMode.find(arguments.get(ProcessMode.class.getSimpleName()));
-    final Optional<RequestMode> requestMode = RequestMode.find(arguments.get(RequestMode.class.getSimpleName()));
-    final Optional<DataType> dataType = DataType.find(arguments.get(DataType.class.getSimpleName()));
+    final Optional<ProcessMode> processMode =
+      ProcessMode.find(arguments.get(ProcessMode.class.getSimpleName()));
+    final Optional<RequestMode> requestMode =
+      RequestMode.find(arguments.get(RequestMode.class.getSimpleName()));
+    final Optional<DataType> dataType =
+      DataType.find(arguments.get(DataType.class.getSimpleName()));
     final Durability durability = arguments.get(Durability.class, Durability.USE_DEFAULT);
     final int batchSize = arguments.getInt(BATCH_SIZE, 100);
     final int qualCount = arguments.getInt(NUMBER_OF_QUALIFIER, 1);
     final Set<byte[]> families = findColumn(tableName);
-    final int cellSize = arguments.getInt(CELL_SIZE, -1);
+    final int qualSize = arguments.getInt(QUALIFIER_SIZE, 5);
+    final int valueSize = arguments.getInt(VALUE_SIZE, 10);
     final boolean needFlush = arguments.getBoolean(FLUSH_AT_THE_END, true);
-    final boolean largeQual = arguments.getBoolean(LARGE_QUALIFIER, false);
     final int logInterval = arguments.getInt(LOG_INTERVAL, 5);
     final boolean randomRow = arguments.getBoolean(RANDOM_ROW, false);
     ExecutorService service = Executors.newFixedThreadPool(threads,
@@ -104,21 +96,16 @@ public class DataGenerator {
           .incrementAndGet();
         CompletableFuture fut = CompletableFuture.runAsync(() -> {
           Optional<Packet> packet;
-          RowWork.Builder builder = RowWork.newBuilder()
-            .setDurability(durability)
-            .setFamilies(families)
-            .setCellSize(cellSize)
-            .setQualifierCount(qualCount)
-            .setLargeQualifier(largeQual)
-            .setRandomRow(randomRow);
+          RowWork.Builder builder =
+            RowWork.newBuilder().setDurability(durability).setFamilies(families)
+              .setQualifierSize(qualSize).setValueSize(valueSize).setQualifierCount(qualCount)
+              .setRandomRow(randomRow);
           try {
             while ((packet = dispatcher.getPacket()).isPresent()) {
               while (packet.get().hasNext()) {
                 long next = packet.get().next();
-                slave.updateRow(builder
-                  .setBatchType(getDataType(dataType))
-                  .setRowIndex(next)
-                  .build());
+                slave
+                  .updateRow(builder.setBatchType(getDataType(dataType)).setRowIndex(next).build());
               }
               packet.get().commit();
             }
@@ -153,15 +140,11 @@ public class DataGenerator {
       slaves.forEach(CompletableFuture::join);
       stop.set(true);
       logger.join();
-      LOG.info("threads:" + threads
-        + ", tableName:" + tableName
-        + ", totalRows:" + totalRows
-        + ", " + ProcessMode.class.getSimpleName() + ":" + processMode
-        + ", " + RequestMode.class.getSimpleName() + ":" + requestMode
-        + ", " + DataType.class.getSimpleName() + ":" + dataType
-        + ", " + Durability.class.getSimpleName() + ":" + durability
-        + ", batchSize:" + batchSize
-        + ", qualCount:" + qualCount);
+      LOG.info("threads:" + threads + ", tableName:" + tableName + ", totalRows:" + totalRows + ", "
+        + ProcessMode.class.getSimpleName() + ":" + processMode + ", " + RequestMode.class
+        .getSimpleName() + ":" + requestMode + ", " + DataType.class.getSimpleName() + ":"
+        + dataType + ", " + Durability.class.getSimpleName() + ":" + durability + ", batchSize:"
+        + batchSize + ", qualCount:" + qualCount);
       slaveCatalog.forEach((k, v) -> LOG.info(k + " " + v));
     }
   }
@@ -197,12 +180,13 @@ public class DataGenerator {
 
   private static String toString(List<Statisticable> statisticables) {
     StringBuilder builder = new StringBuilder();
-    statisticables.stream().mapToLong(Statisticable::getProcessedRows)
-      .sorted().forEach(count -> builder.append(count).append(","));
+    statisticables.stream().mapToLong(Statisticable::getProcessedRows).sorted()
+      .forEach(count -> builder.append(count).append(","));
     return builder.length() > 0 ? builder.substring(0, builder.length() - 1) : builder.toString();
   }
-  private static long log(DataStatistic statistic, long totalRows,
-    long startTime, long maxThroughput, List<Statisticable> statisticables) {
+
+  private static long log(DataStatistic statistic, long totalRows, long startTime,
+    long maxThroughput, List<Statisticable> statisticables) {
     long elapsed = (System.currentTimeMillis() - startTime) / 1000;
     long committedRows = statistic.getCommittedRows();
     if (elapsed <= 0 || committedRows <= 0) {
@@ -236,8 +220,7 @@ public class DataGenerator {
   }
 
   private static Set<byte[]> findColumn(TableName tableName) throws IOException {
-    try (Connection conn = ConnectionFactory.createConnection();
-      Admin admin = conn.getAdmin()) {
+    try (Connection conn = ConnectionFactory.createConnection(); Admin admin = conn.getAdmin()) {
       HTableDescriptor desc = admin.getTableDescriptor(tableName);
       Set<byte[]> columns = new TreeSet<>(Bytes.BYTES_COMPARATOR);
       for (HColumnDescriptor col : desc.getColumnFamilies()) {
@@ -251,8 +234,7 @@ public class DataGenerator {
   public static String getDescription(String name, Enum[] ops) {
     StringBuilder builder = new StringBuilder(name + ":");
     for (Enum op : ops) {
-      builder.append(op.name())
-        .append(",");
+      builder.append(op.name()).append(",");
     }
     builder.deleteCharAt(builder.length() - 1);
     return builder.toString();
@@ -265,8 +247,9 @@ public class DataGenerator {
     private final Connection conn;
     private final TableName nameToFlush;
     private BufferedMutator bm;
-    ConnectionWrap(Optional<ProcessMode> processMode,
-      Optional<RequestMode> requestMode, TableName nameToFlush) throws IOException {
+
+    ConnectionWrap(Optional<ProcessMode> processMode, Optional<RequestMode> requestMode,
+      TableName nameToFlush) throws IOException {
       this.processMode = processMode.orElse(null);
       this.requestMode = requestMode.orElse(null);
       this.nameToFlush = nameToFlush;
@@ -305,28 +288,31 @@ public class DataGenerator {
       }
     }
 
-    Slave createSlave(final TableName tableName, final DataStatistic statistic, final int batchSize) throws IOException {
+    Slave createSlave(final TableName tableName, final DataStatistic statistic, final int batchSize)
+      throws IOException {
       ProcessMode p = getProcessMode();
       RequestMode r = getRequestMode();
 
       switch (p) {
         case SYNC:
           switch (r) {
-          case BATCH:
-            return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
-          case NORMAL:
-            return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
+            case BATCH:
+              return new BatchSlaveSync(conn.getTable(tableName), statistic, batchSize);
+            case NORMAL:
+              return new NormalSlaveSync(conn.getTable(tableName), statistic, batchSize);
           }
           break;
         case BUFFER:
-          return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize, true);
+          return new BufferSlaveSync(conn.getBufferedMutator(tableName), statistic, batchSize,
+            true);
         case SHARED_BUFFER:
           if (bm == null) {
             bm = conn.getBufferedMutator(tableName);
           }
           return new BufferSlaveSync(bm, statistic, batchSize, false);
       }
-      throw new RuntimeException("Failed to find the suitable slave. ProcessMode:" + p + ", RequestMode:" + r);
+      throw new RuntimeException(
+        "Failed to find the suitable slave. ProcessMode:" + p + ", RequestMode:" + r);
     }
 
     @Override
