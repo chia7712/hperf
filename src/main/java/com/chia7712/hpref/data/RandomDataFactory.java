@@ -1,11 +1,20 @@
 package com.chia7712.hpref.data;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 import org.apache.hadoop.hbase.util.Bytes;
 
 public class RandomDataFactory {
-
+  private static final List<Character> ASCII_CODE;
+  static {
+    List<Character> code = new ArrayList<>();
+    for (int i = (int)'a'; i <= (int)'z'; ++i) {
+      code.add((char)i);
+    }
+    ASCII_CODE = Collections.unmodifiableList(code);
+  }
   private RandomDataFactory() {
   }
 
@@ -56,7 +65,9 @@ public class RandomDataFactory {
     public String getString(int size) {
       assert size >= 0;
       char[] buf = new char[size];
-      Arrays.fill(buf, 'a');
+      for (int i = 0; i != size; ++i) {
+        buf[i] = ASCII_CODE.get(rn.nextInt(ASCII_CODE.size()));
+      }
       return String.copyValueOf(buf);
     }
 
