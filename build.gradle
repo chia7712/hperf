@@ -16,6 +16,7 @@ repositories {
 
 dependencies {
   compile libs.hbaseClient
+  compile libs.zookeeper
   testCompile(libs.guava) {
     force = true
   }

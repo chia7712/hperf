@@ -4,6 +4,7 @@ ext {
 }
 
 versions["hbase"] = project.hasProperty('hbase.version') ? project.properties['hbase.version'] : "1.4.1"
+versions["zookeeper"] = project.hasProperty('zookeeper.version') ? project.properties['zookeeper.version'] : "3.4.10"
 versions["hadoop"] = project.hasProperty('hadoop.version') ? project.properties['hadoop.version'] : "2.7.4"
 versions["guava"] = project.hasProperty('guava.version') ? project.properties['guava.version'] : "12.0.1"
 versions["directory"] = project.hasProperty('directory.version') ? project.properties['directory.version'] : "2.0.0-M15"
@@ -16,6 +17,7 @@ libs += [
   hbaseServer: "org.apache.hbase:hbase-server:$versions.hbase",
   hbaseHadoopCompat: "org.apache.hbase:hbase-hadoop-compat:$versions.hbase",
   hbaseHadoop2Compat: "org.apache.hbase:hbase-hadoop2-compat:$versions.hbase",
+  zookeeper: "org.apache.zookeeper:zookeeper:$versions.zookeeper",
   hadoopCommon: "org.apache.hadoop:hadoop-common:$versions.hadoop",
   hadoopHdfs: "org.apache.hadoop:hadoop-hdfs:$versions.hadoop",
   guava: "com.google.guava:guava:$versions.guava",
