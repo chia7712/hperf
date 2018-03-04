@@ -232,7 +232,9 @@ public abstract class BatchSlave implements Slave {
             KeyValue.Type.Put, value);
           rewriter = CellRewriter.newCellRewriter(cell);
         } else {
-          cell = rewriter.rewrite(CellRewriter.Field.QUALIFIER, qualifier).getAndReset();
+          cell = rewriter.rewrite(CellRewriter.Field.FAMILY, family)
+            .rewrite(CellRewriter.Field.QUALIFIER, qualifier)
+            .getAndReset();
         }
         cells.add(cell);
       }
