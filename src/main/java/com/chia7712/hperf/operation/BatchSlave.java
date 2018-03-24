@@ -137,7 +137,7 @@ public abstract class BatchSlave implements Slave {
   }
 
   static byte[] createNormalRow(RowWork work) {
-    byte[] key = KEYS_BYTES.get((int) (Math.random() * KEYS_BYTES.size()));
+    byte[] key = KEYS_BYTES.get(RANDOM.getInteger(KEYS_BYTES.size()));
     byte[] rowIndexBytes = Bytes.toBytes(formatIndex(work.getRowIndex()));
     byte[] buf = new byte[key.length + rowIndexBytes.length];
     int offset = 0;
@@ -147,7 +147,7 @@ public abstract class BatchSlave implements Slave {
   }
 
   static byte[] createRandomRow(RowWork work) {
-    byte[] key = KEYS_BYTES.get((int) (Math.random() * KEYS_BYTES.size()));
+    byte[] key = KEYS_BYTES.get(RANDOM.getInteger(KEYS_BYTES.size()));
     byte[] rowIndexBytes = Bytes.toBytes(formatIndex(work.getRowIndex()));
     byte[] timeBytes = Bytes.toBytes(String.valueOf(System.currentTimeMillis()));
     byte[] randomIndex = Bytes.toBytes(formatIndex(RANDOM.getLong()));
