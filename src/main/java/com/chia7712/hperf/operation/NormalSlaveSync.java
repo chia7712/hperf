@@ -108,9 +108,7 @@ public class NormalSlaveSync extends BatchSlave {
   private void flush() throws IOException, InterruptedException {
     innerFlush(puts, t -> t.put(puts), DataType.PUT);
     innerFlush(deletes, t -> t.delete(deletes), DataType.DELETE);
-    innerFlush(gets, t -> {
-
-    }, DataType.GET);
+    innerFlush(gets, t -> t.get(gets), DataType.GET);
     innerFlush(incrs, t -> t.batch(incrs, getObjects()), DataType.INCREMENT);
   }
 
